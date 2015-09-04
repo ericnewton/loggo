@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.logger;
+package org.logjam.server;
 
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 
@@ -37,7 +37,8 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
-import org.apache.accumulo.logger.options.Options;
+import org.logjam.client.LogEntry;
+import org.logjam.server.options.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

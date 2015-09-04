@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.logger;
+package org.logjam.server;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.concurrent.LinkedBlockingDeque;
+
+import org.logjam.client.LogEntry;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

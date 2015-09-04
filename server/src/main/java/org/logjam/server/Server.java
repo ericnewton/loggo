@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.accumulo.logger;
+package org.logjam.server;
 
 import java.io.File;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.accumulo.core.client.ClientConfiguration;
-import org.apache.accumulo.logger.options.Options;
 import org.apache.commons.configuration.ConfigurationException;
+import org.logjam.client.LogEntry;
+import org.logjam.server.options.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
