@@ -27,8 +27,8 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.accumulo.core.cli.BatchWriterOpts;
 import org.apache.accumulo.core.client.BatchWriter;
+import org.apache.accumulo.core.client.BatchWriterConfig;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Instance;
@@ -47,7 +47,7 @@ public class Writer {
   private static final Logger LOG = LoggerFactory.getLogger(Writer.class);
   private static final LogEntry TERMINATE = new LogEntry();
   private static final SimpleDateFormat dateFormat = new SimpleDateFormat(" " + LogEntry.DATE_FORMAT);
-  private static final BatchWriterOpts BW_OPTS = new BatchWriterOpts();
+  private static final BatchWriterConfig BWCONF = new BatchWriterConfig();
 
   private final ExecutorService threadPool;
   private final AtomicBoolean stop = new AtomicBoolean(false);
@@ -56,7 +56,7 @@ public class Writer {
   private final LinkedBlockingDeque<LogEntry> source;
 
   static {
-    BW_OPTS.batchLatency = 5 * 1000L;
+    BWCONF.setMaxLatency(5, TimeUnit.SECONDS);
   }
 
   public Writer(LinkedBlockingDeque<LogEntry> source, ClientConfiguration clientConf, Options options) {
@@ -82,7 +82,7 @@ public class Writer {
       public Integer call() throws Exception {
         while (!stop.get()) {
           try {
-            BatchWriter bw = connector.createBatchWriter(options.table, null);
+            BatchWriter bw = connector.createBatchWriter(options.table, BWCONF);
             while (!stop.get()) {
               LogEntry entry = source.take();
               if (entry == TERMINATE) {
