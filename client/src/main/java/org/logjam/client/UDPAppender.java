@@ -24,7 +24,6 @@ import java.net.UnknownHostException;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
-import org.apache.log4j.net.SocketAppender;
 import org.apache.log4j.net.ZeroConfSupport;
 import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.xml.XMLLayout;
@@ -43,13 +42,14 @@ import org.apache.log4j.xml.XMLLayout;
  * for log messages.
  *
  * <p>
- * This was inspired and really extended/copied from {@link SocketAppender}. Please see the docs for the proper credit to the authors of that class.
+ * This was inspired and really extended/copied from {@link org.apache.log4j.net.SocketAppender}. Please see the docs for the proper credit to the authors of
+ * that class.
  *
  * @author <a href="mailto:kbrown@versatilesolutions.com">Kevin Brown</a>
- * @author Scott Deboy <sdeboy@apache.org>
+ * @author Scott Deboy &lt;sdeboy@apache.org&gt;
  */
 /*
- * Backported to log4j 1.2
+ * Trivially backported to log4j 1.2
  */
 public class UDPAppender extends AppenderSkeleton {
   /**
@@ -230,7 +230,6 @@ public class UDPAppender extends AppenderSkeleton {
         } else {
           payload = buf.toString().getBytes(encoding);
         }
-
         DatagramPacket dp = new DatagramPacket(payload, payload.length, address, port);
         outSocket.send(dp);
       } catch (IOException e) {

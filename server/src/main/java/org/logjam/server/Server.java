@@ -16,11 +16,15 @@
  */
 package org.logjam.server;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.File;
 import java.util.concurrent.LinkedBlockingDeque;
 
 import org.apache.accumulo.core.client.ClientConfiguration;
+import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
 import org.apache.commons.configuration.ConfigurationException;
+import org.apache.zookeeper.KeeperException;
 import org.logjam.client.LogEntry;
 import org.logjam.server.options.Options;
 import org.slf4j.Logger;
@@ -71,6 +75,7 @@ public class Server {
   private EventLoopGroup dgramGroup = new NioEventLoopGroup();
   private Writer writer;
   private Channel channel;
+  private ZooReaderWriter zookeeper;
 
   int run() {
     try {
@@ -108,9 +113,19 @@ public class Server {
     try {
       channel = b.bind(options.host, options.port).sync().channel();
       bb.bind(options.host, options.port).sync();
-    } catch (InterruptedException ex) {
+      registerInZookeeper(options);
+    } catch (KeeperException | InterruptedException ex) {
       throw new RuntimeException(ex);
     }
+  }
+
+  private void registerInZookeeper(Options options) throws KeeperException, InterruptedException {
+    System.out.println("zookeepers " + options.zookeepers);
+    zookeeper = new ZooReaderWriter(options.zookeepers, 30 * 1000, "");
+    if (!zookeeper.exists("/udp")) {
+      zookeeper.mkdirs("/udp");
+    }
+    zookeeper.putEphemeralData("/udp/address", (options.host + ":" + options.port).getBytes(UTF_8));
   }
 
   public void stop() {

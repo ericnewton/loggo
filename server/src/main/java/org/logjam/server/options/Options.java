@@ -41,6 +41,6 @@ public class Options {
   @Parameter(names = {"--password"}, converter = PasswordConverter.class)
   public Password password = new Password("secret");
 
-  @Parameter(names ={"-zk", "--zookeepers"})
-  public String zookeepers = "localhost:2181";
+  @Parameter(names = {"-zk", "--zookeepers"})
+  public String zookeepers = "localhost:2181/loggers";
 }
