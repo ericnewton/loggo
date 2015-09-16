@@ -28,7 +28,6 @@ import java.util.Random;
 
 import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.helpers.LogLog;
-import org.apache.log4j.net.ZeroConfSupport;
 import org.apache.log4j.spi.LoggingEvent;
 import org.apache.log4j.xml.XMLLayout;
 import org.apache.zookeeper.KeeperException;
@@ -69,20 +68,13 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
   String hostname;
   String application;
   String zookeepers;
-  String encoding;
+  int zookeeperTimeout = 30 * 1000;
   InetAddress address;
   DatagramSocket outSocket;
-
-  /**
-   * The MulticastDNS zone advertised by a ZooUDPAppender
-   */
-  public static final String ZONE = "_log4j_xml_udp_appender.local.";
 
   // if there is something irrecoverably wrong with the settings, there is no
   // point in sending out packets.
   boolean inError = false;
-  private boolean advertiseViaMulticastDNS;
-  private ZeroConfSupport zeroConf;
   private ZooKeeper zookeeper;
   private Integer port;
 
@@ -122,12 +114,12 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
 
     if (zookeepers != null) {
       try {
-        this.zookeeper = new ZooKeeper(this.zookeepers, 30 * 1000, this);
+        this.zookeeper = new ZooKeeper(this.zookeepers, this.zookeeperTimeout, this);
       } catch (IOException ex) {
         throw new RuntimeException("Unable to use zookeeper setting: " + this.zookeepers);
       }
     } else {
-      String err = "The Zookeepers property is required for SocketAppender named " + name;
+      String err = "The Zookeepers property is required for ZooUDPAppender named " + name;
       LogLog.error(err);
       throw new IllegalStateException(err);
     }
@@ -148,10 +140,6 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
   public synchronized void close() {
     if (closed) {
       return;
-    }
-
-    if (advertiseViaMulticastDNS) {
-      zeroConf.unadvertise();
     }
 
     this.closed = true;
@@ -203,27 +191,24 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
       return;
     }
 
-    if (outSocket != null) {
-      event.setProperty(HOSTNAME_KEY, hostname);
-      if (application != null) {
-        event.setProperty(APPLICATION_KEY, application);
-      }
+    if (outSocket == null) {
+      return;
+    }
+    event.setProperty(HOSTNAME_KEY, hostname);
+    if (application != null) {
+      event.setProperty(APPLICATION_KEY, application);
+    }
 
-      try {
-        StringBuffer buf = new StringBuffer(layout.format(event));
+    try {
+      StringBuffer buf = new StringBuffer(layout.format(event));
 
-        byte[] payload;
-        if (encoding == null) {
-          payload = buf.toString().getBytes();
-        } else {
-          payload = buf.toString().getBytes(encoding);
-        }
-        DatagramPacket dp = new DatagramPacket(payload, payload.length, address, port);
-        outSocket.send(dp);
-      } catch (IOException e) {
-        outSocket = null;
-        LogLog.warn("Detected problem with UDP connection: " + e);
-      }
+      byte[] payload;
+      payload = buf.toString().getBytes(UTF_8);
+      DatagramPacket dp = new DatagramPacket(payload, payload.length, address, port);
+      outSocket.send(dp);
+    } catch (IOException e) {
+      outSocket = null;
+      LogLog.warn("Detected problem with UDP connection: " + e);
     }
   }
 
@@ -248,16 +233,10 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
     return true;
   }
 
-  /**
-   * The <b>RemoteHost</b> option takes a string value which should be the host name or ipaddress to send the UDP packets.
-   */
   public void setZookeepers(String zookeepers) {
     this.zookeepers = zookeepers;
   }
 
-  /**
-   * Returns value of the <b>RemoteHost</b> option.
-   */
   public String getZookeepers() {
     return zookeepers;
   }
@@ -275,28 +254,6 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
    */
   public String getApplication() {
     return application;
-  }
-
-  /**
-   * The <b>Encoding</b> option specifies how the bytes are encoded. If this option is not specified, the System encoding is used.
-   */
-  public void setEncoding(String encoding) {
-    this.encoding = encoding;
-  }
-
-  /**
-   * Returns value of the <b>Encoding</b> option.
-   */
-  public String getEncoding() {
-    return encoding;
-  }
-
-  public void setAdvertiseViaMulticastDNS(boolean advertiseViaMulticastDNS) {
-    this.advertiseViaMulticastDNS = advertiseViaMulticastDNS;
-  }
-
-  public boolean isAdvertiseViaMulticastDNS() {
-    return advertiseViaMulticastDNS;
   }
 
   @SuppressWarnings("deprecation")
@@ -348,13 +305,17 @@ public class ZooUDPAppender extends AppenderSkeleton implements Watcher {
       address = InetAddress.getByName(parts[0]);
       port = Integer.decode(parts[1]);
       connect(address, port);
-      if (advertiseViaMulticastDNS) {
-        zeroConf = new ZeroConfSupport(ZONE, port, getName());
-        zeroConf.advertise();
-      }
     } catch (UnknownHostException | KeeperException | InterruptedException e) {
       LogLog.debug("Exception " + e);
     }
 
+  }
+
+  public int getZookeeperTimeout() {
+    return zookeeperTimeout;
+  }
+
+  public void setZookeeperTimeout(int zookeeperTimeout) {
+    this.zookeeperTimeout = zookeeperTimeout;
   }
 }

@@ -125,7 +125,11 @@ public class Server {
     if (!zookeeper.exists("/udp")) {
       zookeeper.mkdirs("/udp");
     }
-    zookeeper.putEphemeralData("/udp/address", (options.host + ":" + options.port).getBytes(UTF_8));
+    zookeeper.putEphemeralSequential("/udp/logger-", (options.host + ":" + options.port).getBytes(UTF_8));
+    if (!zookeeper.exists("/tcp")) {
+      zookeeper.mkdirs("/tcp");
+    }
+    zookeeper.putEphemeralSequential("/tcp/logger-", (options.host + ":" + options.port).getBytes(UTF_8));
   }
 
   public void stop() {

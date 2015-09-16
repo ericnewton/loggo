@@ -35,9 +35,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.accumulo.core.client.AccumuloException;
+import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
 import org.apache.accumulo.core.client.Connector;
 import org.apache.accumulo.core.client.Scanner;
+import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Key;
 import org.apache.accumulo.core.data.Value;
@@ -162,13 +165,7 @@ public class SimpleServerIT {
     writer.close();
     assertEquals(0, cluster.exec(LogSomething.class, Arrays.asList("-Dlog4j.configuration=file://" + log4j.toString(), "-Dlog4j.debug=true")).waitFor());
     sleepUninterruptibly(8, TimeUnit.SECONDS);
-    Scanner scanner = conn.createScanner("logs", Authorizations.EMPTY);
-    assertEquals(1, Iterators.size(scanner.iterator()));
-    Entry<Key,Value> next = scanner.iterator().next();
-    assertEquals(next.getKey().getColumnQualifier().toString(), "someapp");
-    assertTrue(next.getKey().getRow().toString().startsWith("localhost"));
-    assertTrue(next.getValue().toString().contains("Ohai, I am a log message"));
-    conn.tableOperations().deleteRows(options.table, null, null);
+    verifty();
   }
 
   @Test(timeout = 60 * 1000)
@@ -186,6 +183,11 @@ public class SimpleServerIT {
     writer.close();
     assertEquals(0, cluster.exec(LogSomething.class, Arrays.asList("-Dlog4j.configuration=file://" + log4j.toString(), "-Dlog4j.debug=true")).waitFor());
     sleepUninterruptibly(8, TimeUnit.SECONDS);
+
+    verifty();
+  }
+
+  private void verifty() throws TableNotFoundException, AccumuloException, AccumuloSecurityException {
     Scanner scanner = conn.createScanner("logs", Authorizations.EMPTY);
     assertEquals(1, Iterators.size(scanner.iterator()));
     Entry<Key,Value> next = scanner.iterator().next();
@@ -193,5 +195,23 @@ public class SimpleServerIT {
     assertTrue(next.getKey().getRow().toString().startsWith("localhost"));
     assertTrue(next.getValue().toString().contains("Ohai, I am a log message"));
     conn.tableOperations().deleteRows(options.table, null, null);
+  }
+
+  @Test(timeout = 60 * 1000)
+  public void testZooSocketAppender() throws Exception {
+    Path temp = cluster.getTemporaryPath();
+    FileSystem fs = cluster.getFileSystem();
+    fs.mkdirs(temp);
+    Path log4j = new Path(temp, "log4j.properties");
+    FSDataOutputStream writer = fs.create(log4j);
+    writer.writeBytes("log4j.rootLogger=ERROR,A1\n");
+    writer.writeBytes("log4j.appender.A1=" + org.logjam.client.ZooSocketAppender.class.getName() + "\n");
+    writer.writeBytes("log4j.appender.A1.layout=org.apache.log4j.EnhancedPatternLayout\n");
+    writer.writeBytes("log4j.appender.A1.layout.ConversionPattern=localhost someapp %d{ISO8601} [%c] %p: %m%n%n\n");
+    writer.writeBytes("log4j.appender.A1.zookeepers=" + options.zookeepers + "/tcp\n");
+    writer.close();
+    assertEquals(0, cluster.exec(LogSomething.class, Arrays.asList("-Dlog4j.configuration=file://" + log4j.toString(), "-Dlog4j.debug=true")).waitFor());
+    sleepUninterruptibly(8, TimeUnit.SECONDS);
+    verifty();
   }
 }
