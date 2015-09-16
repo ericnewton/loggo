@@ -19,8 +19,8 @@ logjam: a scalable live log collection service and tools.
 
 Why some new log collection service?
 
-# scalable: this service will allow many clients to send data to many servers
-# logging clients can be written in any language
-# built to answer simple questions: what happened between 2AM and 3AM last night?
-# must handle a million events / second
+1. scalable: this service will allow many clients to send data to many servers
+1. logging clients can be written in any language
+1. built to answer simple questions: what happened between 2AM and 3AM last night?
+1. must handle a million events / second
 
