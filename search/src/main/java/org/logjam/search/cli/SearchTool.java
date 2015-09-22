@@ -55,6 +55,7 @@ import com.beust.jcommander.ParameterException;
 import com.google.common.base.Joiner;
 
 public class SearchTool {
+
   public static class TimeConverter implements IStringConverter<Long> {
     private static final String SHORT_FORMAT = "yyyy-MM-dd hh:mm:ss";
     private static final String DATE_ONLY = "yyyy-MM-dd";
@@ -67,24 +68,6 @@ public class SearchTool {
         } catch (ParseException e) {}
       }
       throw new RuntimeException("Unable to parse date/time");
-    }
-  }
-
-  public static class SliceConverter implements IStringConverter<Slice> {
-    @Override
-    public Slice convert(String value) {
-      String[] parts = value.split(":");
-      if (parts.length != 2) {
-        throw new RuntimeException("Unable to parse \"" + value + "\" as a slice");
-      }
-      int start = -1, end = -1;
-      if (parts[0].length() > 0) {
-        start = Integer.parseInt(parts[0]);
-      }
-      if (parts[1].length() > 0) {
-        end = Integer.parseInt(parts[1]);
-      }
-      return new Slice(start, end);
     }
   }
 
