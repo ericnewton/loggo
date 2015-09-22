@@ -38,6 +38,7 @@ import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.data.Mutation;
 import org.logjam.client.LogEntry;
+import org.logjam.schema.Schema;
 import org.logjam.server.options.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +77,13 @@ public class Writer {
     return new ZooKeeperInstance(clientConf);
   }
 
+  public static Mutation logEntryToMutation(LogEntry entry, SimpleDateFormat formatter) {
+    long hashCode = Math.abs(entry.message.hashCode() + entry.host.hashCode()) % Schema.SHARDS;
+    Mutation m = new Mutation(String.format("%04d %s", hashCode, formatter.format(new Date(entry.timestamp))));
+    m.put(Schema.LOG_FAMILY, entry.app + "\0" + entry.host, entry.message);
+    return m;
+  }
+
   public void start() {
     threadPool.submit(new Callable<Integer>() {
       @Override
@@ -89,9 +97,7 @@ public class Writer {
                 bw.close();
                 return 0;
               }
-              Mutation m = new Mutation(entry.host + dateFormat.format(new Date(entry.timestamp)));
-              m.put("", entry.app, entry.message);
-              bw.addMutation(m);
+              bw.addMutation(logEntryToMutation(entry, dateFormat));
             }
           } catch (TableNotFoundException ex) {
             LOG.warn("table " + options.table + " does not exist");
