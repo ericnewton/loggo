@@ -62,7 +62,7 @@ For example:
 	11230405
 
 	# find all the logs from r101n07 from today
-	$ ./bin/accumulo logjam-search -h r101n07 -s today --count
+	$ ./bin/accumulo logjam-search -h r101n07 -s today
 	2015-09-01 01:02:03,123	echoApp localhost		This is a log message.
 	
 	# find all the logs from r00{1,2,3}n01 from zookeeper starting this month
