@@ -17,6 +17,9 @@
 package org.logjam.schema;
 
 public interface Schema {
-  public static final int SHARDS = 7919;
+  public static final int SHARDS = 251;
+  public static final String SHARD_FORMAT = "%03d";
+  public static final int SHARD_LENGTH = 4;
+  public static final String APP_HOST_SEPARATOR = "\0";
   public static final String LOG_FAMILY = "log";
 }

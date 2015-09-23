@@ -32,13 +32,16 @@
     <module>server</module>
     <module>search</module>
     <module>schema</module>
+    <module>kafka</module>
   </modules>
   <properties>
     <accumulo.release.version>1.7.0</accumulo.release.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.7</maven.compiler.source>
     <maven.compiler.target>1.7</maven.compiler.target>
-	<slf4j.version>1.7.5</slf4j.version>
+    <slf4j.version>1.7.5</slf4j.version>
+    <kafka.version>0.8.2.1</kafka.version>
+    <zookeeper.version>3.4.6</zookeeper.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -46,11 +49,6 @@
         <groupId>log4j</groupId>
         <artifactId>log4j</artifactId>
         <version>1.2.16</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-        <version>3.4.6</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>
@@ -146,7 +144,32 @@
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>1.9.1</version>
         </plugin>
-      </plugins>
+        <plugin>
+            <groupId>org.eclipse.m2e</groupId>
+            <artifactId>lifecycle-mapping</artifactId>
+            <version>1.0.0</version>
+            <configuration>
+                <lifecycleMappingMetadata>
+                    <pluginExecutions>
+                        <pluginExecution>
+                            <pluginExecutionFilter>
+                                <groupId>org.apache.maven.plugins</groupId>
+                                <artifactId>maven-remote-resources-plugin</artifactId>
+                                <versionRange>[1.0,)</versionRange>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                            </pluginExecutionFilter>
+                            <action>
+                                <ignore>
+                                </ignore>
+                            </action>
+                        </pluginExecution>
+                    </pluginExecutions>
+                </lifecycleMappingMetadata>
+            </configuration>
+        </plugin>
+    </plugins>
     </pluginManagement>
   </build>
 </project>

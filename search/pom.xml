@@ -30,6 +30,12 @@
       <groupId>org.glassfish.jersey.containers</groupId>
       <artifactId>jersey-container-grizzly2-http</artifactId>
     </dependency>
+      <dependency>
+        <groupId>com.google.auto.service</groupId>
+        <artifactId>auto-service</artifactId>
+        <version>1.0-rc2</version>
+        <optional>true</optional>
+      </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -37,8 +43,13 @@
     </dependency>
     <dependency>
     	<groupId>org.apache.accumulo</groupId>
+    	<artifactId>accumulo-start</artifactId>
+    	<version>${accumulo.release.version}</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.accumulo</groupId>
     	<artifactId>accumulo-core</artifactId>
-    	<version>1.7.0</version>
+    	<version>${accumulo.release.version}</version>
     </dependency>
     <dependency>
     	<groupId>com.beust</groupId>

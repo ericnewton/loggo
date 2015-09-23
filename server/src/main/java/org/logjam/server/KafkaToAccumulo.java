@@ -163,8 +163,8 @@ public class KafkaToAccumulo {
         connector.tableOperations().create(table);
         TreeSet<Text> splits = new TreeSet<Text>();
         int splitSize = Schema.SHARDS / 10;
-        for (int i = splitSize; i < Schema.SHARDS - splitSize; i++) {
-          splits.add(new Text(String.format("%04d", i)));
+        for (int i = splitSize; i < Schema.SHARDS - splitSize; i += splitSize) {
+          splits.add(new Text(String.format(Schema.SHARD_FORMAT, i)));
         }
         connector.tableOperations().addSplits(table, splits);
         IteratorSetting is = new IteratorSetting(100, AgeOffFilter.class);

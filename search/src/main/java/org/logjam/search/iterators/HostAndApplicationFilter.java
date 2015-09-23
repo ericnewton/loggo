@@ -30,19 +30,22 @@ import org.apache.accumulo.core.iterators.Filter;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 import org.apache.hadoop.io.BytesWritable;
+import org.logjam.schema.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Joiner;
+import com.google.common.primitives.Bytes;
 
 public class HostAndApplicationFilter extends Filter {
 
   static final Logger log = LoggerFactory.getLogger(HostAndApplicationFilter.class);
   static final String HOSTS_OPTION = "hosts";
   static final String APPLICATIONS_OPTION = "apps";
-  static final BytesWritable.Comparator comparator = new BytesWritable.Comparator();
-  byte[][] hosts;
-  byte[][] apps;
+  static final BytesWritable.Comparator COMPARATOR = new BytesWritable.Comparator();
+  static final byte[] SEPARATOR = Schema.APP_HOST_SEPARATOR.getBytes(UTF_8);
+  private byte[][] hosts;
+  private byte[][] apps;
 
   @Override
   public void init(SortedKeyValueIterator<Key,Value> source, Map<String,String> options, IteratorEnvironment env) throws IOException {
@@ -67,18 +70,13 @@ public class HostAndApplicationFilter extends Filter {
   public boolean accept(Key k, Value v) {
     ByteSequence bs = k.getColumnQualifierData();
     byte[] bytes = bs.getBackingArray();
-    int i;
-    for (i = 0; i < bs.length(); i++) {
-      if (bytes[i] == 0) {
-        break;
-      }
-    }
-    if (i == bs.length()) {
+    int i = Bytes.indexOf(bytes, SEPARATOR);
+    if (i < 0) {
       return false;
     }
     boolean matchesApps = apps.length == 0;
     for (byte[] app : apps) {
-      if (comparator.compare(app, 0, app.length, bytes, 0, i) == 0) {
+      if (COMPARATOR.compare(app, 0, app.length, bytes, 0, i) == 0) {
         matchesApps = true;
         break;
       }
@@ -86,7 +84,7 @@ public class HostAndApplicationFilter extends Filter {
 
     boolean matchesHost = hosts.length == 0;
     for (byte[] host : hosts) {
-      if (comparator.compare(host, 0, host.length, bytes, i + 1, bs.length() - i - 1) == 0) {
+      if (COMPARATOR.compare(host, 0, host.length, bytes, i + SEPARATOR.length, bs.length() - i - SEPARATOR.length) == 0) {
         matchesHost = true;
         break;
       }

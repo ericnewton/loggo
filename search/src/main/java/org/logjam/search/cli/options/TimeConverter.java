@@ -14,32 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.logjam.client;
+package org.logjam.search.cli.options;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Date;
 
-public class LogEntry {
-  public String host;
-  public String app;
-  public long timestamp;
-  public String message;
+import org.logjam.search.cli.Search;
 
-  public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss,SSS";
+import com.beust.jcommander.IStringConverter;
 
-  public static LogEntry parseEntry(String msg, SimpleDateFormat dateFormat) throws ParseException {
-    LogEntry result = new LogEntry();
-    String[] parts = msg.trim().split(" ", 5);
-    if (parts.length != 5) {
-      throw new ParseException(msg, msg.length());
+public class TimeConverter implements IStringConverter<Long> {
+
+  @Override
+  public Long convert(String value) {
+    for (String format : Search.FORMATS) {
+      try {
+        return new SimpleDateFormat(format).parse(value).getTime();
+      } catch (ParseException e) {}
     }
-    Iterator<String> i = Arrays.asList(parts).iterator();
-    result.host = i.next();
-    result.app = i.next();
-    result.timestamp = dateFormat.parse(i.next() + " " + i.next()).getTime();
-    result.message = i.next();
-    return result;
+    if (value.equals("today")) {
+      SimpleDateFormat dateOnly = new SimpleDateFormat(Search.DATE_ONLY);
+      try {
+        return dateOnly.parse(dateOnly.format(new Date())).getTime();
+      } catch (ParseException e) {
+        throw new RuntimeException(e); // unlikely
+      }
+    }
+    throw new RuntimeException("Unable to parse date/time");
   }
 }
