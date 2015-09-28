@@ -19,6 +19,7 @@ package org.logjam.search.cli;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -95,15 +96,20 @@ public class Search {
         bs.addScanIterator(is);
       }
       // stack the iterators for multiple terms: each term must match to return results
+      List<String> families = Arrays.asList(Schema.FAMILIES);
       if (!opts.terms.isEmpty()) {
         for (int i = 0; i < opts.terms.size(); i++) {
+          String term = opts.terms.get(i);
           IteratorSetting is;
           if (opts.regexp) {
             is = new IteratorSetting(priority++, RegExFilter.class);
-            RegExFilter.setRegexs(is, null, null, null, opts.terms.get(i), false);
+            RegExFilter.setRegexs(is, null, null, null, term, false);
           } else {
             is = new IteratorSetting(priority++, "name" + i, GrepValueFilter.class);
-            GrepValueFilter.setTerm(is, opts.terms.get(i));
+            GrepValueFilter.setTerm(is, term);
+            if (families.contains(term)) {
+              bs.fetchColumnFamily(new Text(term));
+            }
           }
           bs.addScanIterator(is);
         }

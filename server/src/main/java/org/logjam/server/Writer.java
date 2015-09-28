@@ -76,13 +76,20 @@ public class Writer {
     LOG.info("About to talk to zookeeper, if this hangs, check zookeeper");
     return new ZooKeeperInstance(clientConf);
   }
-  
+
   static final String ROW_FORMAT = Schema.SHARD_FORMAT + " %s";
 
   public static Mutation logEntryToMutation(LogEntry entry, SimpleDateFormat formatter) {
+    String family = Schema.DEFAULT_FAMILY;
+    for (String substr : Schema.FAMILIES) {
+      if (entry.message.indexOf(substr) >= 0) {
+        family = substr;
+        break;
+      }
+    }
     long hashCode = Math.abs(entry.message.hashCode() + entry.host.hashCode()) % Schema.SHARDS;
     Mutation m = new Mutation(String.format(ROW_FORMAT, hashCode, formatter.format(new Date(entry.timestamp))));
-    m.put(Schema.LOG_FAMILY, entry.app + Schema.APP_HOST_SEPARATOR + entry.host, entry.message);
+    m.put(family, entry.app + Schema.APP_HOST_SEPARATOR + entry.host, entry.message);
     return m;
   }
 

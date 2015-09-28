@@ -21,5 +21,8 @@ public interface Schema {
   public static final String SHARD_FORMAT = "%03d";
   public static final int SHARD_LENGTH = 4;
   public static final String APP_HOST_SEPARATOR = "\0";
-  public static final String LOG_FAMILY = "log";
+  public static final String DEFAULT_FAMILY = "UNKNOWN";
+
+  public static final String[] FAMILIES = {"DEBUG", "INFO", "TRACE", "WARN", "ERROR", "FATAL"};
+
 }

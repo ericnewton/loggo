@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +40,7 @@ import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.iterators.user.AgeOffFilter;
+import org.apache.accumulo.start.spi.KeywordExecutable;
 import org.apache.hadoop.io.Text;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.logjam.client.LogEntry;
@@ -48,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableMap;
 
 import kafka.consumer.Consumer;
@@ -65,10 +69,13 @@ import kafka.serializer.StringDecoder;
  * hostname application %d{ISO8601} any message here you like
  * <p>
  * and stores the result in a table of the form [row][cf][cq][value]:
- * [shard date][log] [application\0host][message]
+ * [shard date][LEVEL] [application\0host][message]
+ *
+ * If the log level cannot be determined by the message, "UNKNOWN" is used.
  *
  */
-public class KafkaToAccumulo {
+@AutoService(KeywordExecutable.class)
+public class KafkaToAccumulo implements KeywordExecutable {
 
   static final Logger LOG = LoggerFactory.getLogger(KafkaConsumer.class);
 
@@ -83,29 +90,17 @@ public class KafkaToAccumulo {
 
     @Override
     public LogEntry fromBytes(byte[] data) {
+      String msg = new String(data, UTF_8);
       try {
-        return LogEntry.parseEntry(new String(data, UTF_8), formatter);
+        return LogEntry.parseEntry(msg, formatter);
       } catch (ParseException e) {
-        LOG.info("Unable to parse message: {}", e.toString());
+        LOG.info("Unable to parse message: {} ({})", e.toString(), msg);
         return null;
       }
     }
   }
 
-  public static void main(String[] args) throws Exception {
-    JCommander commander = new JCommander();
-    Options opts = new Options();
-    commander.addObject(opts);
-    try {
-      commander.parse(args);
-    } catch (ParameterException ex) {
-      commander.usage();
-      exitWithError(ex.getMessage(), 1);
-    }
-    KafkaToAccumulo server = new KafkaToAccumulo();
-    server.initialize(opts);
-    server.exit(server.run());
-  }
+  public KafkaToAccumulo() {}
 
   private ConsumerConfig consumerConfig;
   private String topic = "logs";
@@ -160,6 +155,7 @@ public class KafkaToAccumulo {
     connector = instance.getConnector(username, new PasswordToken(password.getBytes()));
     if (!connector.tableOperations().exists(table)) {
       try {
+        // Create a table with 10 initial splits
         connector.tableOperations().create(table);
         TreeSet<Text> splits = new TreeSet<Text>();
         int splitSize = Schema.SHARDS / 10;
@@ -167,12 +163,39 @@ public class KafkaToAccumulo {
           splits.add(new Text(String.format(Schema.SHARD_FORMAT, i)));
         }
         connector.tableOperations().addSplits(table, splits);
+
+        // Add a 31 day age off
         IteratorSetting is = new IteratorSetting(100, AgeOffFilter.class);
         AgeOffFilter.setTTL(is, 31 * 24 * 60 * 60 * 1000L);
         connector.tableOperations().attachIterator(table, is);
+
+        // Put DEBUG messages into their own locality group
+        Map<String,Set<Text>> groups = Collections.singletonMap("debug", Collections.singleton(new Text("DEBUG")));
+        connector.tableOperations().setLocalityGroups(table, groups);
       } catch (TableExistsException ex) {
         // perhaps a peer server created it
       }
     }
+  }
+
+  @Override
+  public String keyword() {
+    return "logjam-writer";
+  }
+
+  @Override
+  public void execute(String[] args) throws Exception {
+    JCommander commander = new JCommander();
+    Options opts = new Options();
+    commander.addObject(opts);
+    try {
+      commander.parse(args);
+    } catch (ParameterException ex) {
+      commander.usage();
+      exitWithError(ex.getMessage(), 1);
+    }
+    KafkaToAccumulo server = new KafkaToAccumulo();
+    server.initialize(opts);
+    server.exit(server.run());
   }
 }
