@@ -29,11 +29,12 @@ Why some new log collection service?
 
 The simplest logger can be very simple.  They just need to connect to a socket and send a properly formatted message. The format is a line containing hostname<space>application<space>message. For example:
 
-	$ echo $(hostname) echoApp 'This is a log message.\n' | nc loggerhost 9991
+   $ NOW=$(date '+%y-%m-%d %H:%M:%S,000')
+   $ echo $(hostname) echoApp ${NOW} 'This is a log message.\n' | nc loggerhost 9991
 
 You can use UDP messages if there's any concern about the availability of the service interfering with the application:
 
-	$ echo $(hostname) echoApp 'This is a log message.' | nc -u loggerhost 9991
+	$ echo $(hostname) echoApp ${NOW} 'This is a log message.' | nc -u loggerhost 9991
 
 Using TCP connections, the messages are terminated with double-newlines, like the example above.
 
