@@ -1,0 +1,29 @@
+[KafkaConsumer]
+# see http://kafka.apache.org/07/configuration.html
+#zookeeper.connect = localhost:2181/kafka
+group.id = logger
+
+[kafka]
+#topic = logs
+
+[server]
+# where to register tcp/udp port numbers in zookeeper
+# zookeepers = 
+# queue.size = 1000
+# tcp.port = 9991
+# udp.port = 9991
+# host = 0.0.0.0 
+
+[accumulo]
+#instance.name=instance
+#instance.zookeeper.host=localhost:2181
+
+[batchwriter]
+# table = logs
+# user = root
+# password = secret
+# maxMemory = 50M
+# maxLatency = 2m
+# timeout=Long.MAX_VALUE
+# maxWriteThreads = 3
+# durability=default

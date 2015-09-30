@@ -27,7 +27,7 @@ Why some new log collection service?
 	* for 10 services / node
 	* for 10K nodes
 
-The simplest logger can be very simple.  They just need to connect to a socket and send a properly formatted message. The format is a line containing hostname<space>application<space>message. For example:
+The simplest logger can be very simple.  They just need to connect to a socket and send a properly formatted message. The format is a line containing hostname<space>application<space>date-time<space>message. For example:
 
    $ NOW=$(date '+%y-%m-%d %H:%M:%S,000')
    $ echo $(hostname) echoApp ${NOW} 'This is a log message.\n' | nc loggerhost 9991
@@ -38,7 +38,7 @@ You can use UDP messages if there's any concern about the availability of the se
 
 Using TCP connections, the messages are terminated with double-newlines, like the example above.
 
-In many large hadoop installations, logging can be controlled using log4j Appenders. The most reliable and scalable means for sending log messages uses Apache Kafka.
+In many hadoop installations, much of the infrastructure logging can be controlled using log4j Appenders. Apache Kafka provides a reliable and scalable means for sending log messages.
 
 By adding:
 
@@ -52,7 +52,9 @@ to <pre>$HADOOP_CONF_DIR/hadoop-env.sh</pre> and configuring a log4j appender in
 	log4j.appender.KAFKA.layout=org.apache.log4j.EnhancedPatternLayout
 	log4j.appender.KAFKA.layout.ConversionPattern=${hadoop.hostname} ${hadoop.application} %d{ISO8601} [%c] %p: %m
 
-Kafka will deliver log messages to a service which will store the messages in Accumulo, though other back-ends would not be difficult to write.
+Kafka will deliver log messages to a service which will store the messages in Accumulo, though other back-ends would not be difficult to write. The writer is started with a simple configuration file to find the kafka servers and the accumulo instance. Multiple writers can be used at scale.
+
+    $ ./bin/accumulo logjam-server --config conf/logjam.ini
 
 There is a simple command line search utility which uses the power of Accumulo iterators to distribute the data extraction for analysis.
 

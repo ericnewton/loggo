@@ -25,9 +25,6 @@
   <artifactId>logjam-server</artifactId>
   <name>logjam-server</name>
   <description></description>
-  <properties>
-    <accumulo.release.version>1.7.0</accumulo.release.version>
-  </properties>
   <dependencies>
     <dependency>
       <groupId>com.google.auto.service</groupId>

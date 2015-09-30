@@ -31,11 +31,14 @@ import io.netty.handler.codec.string.StringDecoder;
 public class LoggerReaderInitializer extends ChannelInitializer<SocketChannel> {
 
   private static final StringDecoder DECODER = new StringDecoder();
-  // private static final Logger LOG = LoggerFactory.getLogger(LoggerReaderInitializer.class);
-  private LinkedBlockingDeque<LogEntry> queue;
+  private final LinkedBlockingDeque<LogEntry> queue;
 
-  private static final ByteBuf[] DOUBLE_NEWLINE = {Unpooled.wrappedBuffer(new byte[] {'\r', '\n', '\r', '\n'}),
-      Unpooled.wrappedBuffer(new byte[] {'\n', '\n'}),};
+  //@formatter:off
+  private static final ByteBuf[] DOUBLE_NEWLINE = {
+      Unpooled.wrappedBuffer(new byte[] {'\r', '\n', '\r', '\n'}),
+      Unpooled.wrappedBuffer(new byte[] {'\n', '\n'}),
+      };
+  //@formatter:on
 
   public LoggerReaderInitializer(LinkedBlockingDeque<LogEntry> queue) {
     this.queue = queue;

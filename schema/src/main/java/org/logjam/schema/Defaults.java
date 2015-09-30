@@ -6,7 +6,7 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,19 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.logjam.server.options;
+package org.logjam.schema;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-public class Password {
-  public byte[] value;
-
-  public Password(String dfault) {
-    value = dfault.getBytes(UTF_8);
-  }
-
-  @Override
-  public String toString() {
-    return new String(value, UTF_8);
-  }
+public class Defaults {
+  public static final String TABLE = "logs";
+  public static final String USER = "root";
+  public static final String PASSWORD = "secret";
+  public static final int PORT = 9991;
+  public static final int QUEUE_SIZE = 1000;
+  public static final String HOST = "0.0.0.0";
+  public static final String TOPIC = "logs";
 }

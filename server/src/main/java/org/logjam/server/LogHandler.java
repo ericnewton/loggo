@@ -28,11 +28,10 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 public class LogHandler extends SimpleChannelInboundHandler<String> {
-
   private static final Logger LOG = LoggerFactory.getLogger(LogHandler.class);
 
   private final SimpleDateFormat dateFormat = new SimpleDateFormat(LogEntry.DATE_FORMAT);
-  private LinkedBlockingDeque<LogEntry> queue;
+  private final LinkedBlockingDeque<LogEntry> queue;
 
   public LogHandler(LinkedBlockingDeque<LogEntry> queue) {
     this.queue = queue;

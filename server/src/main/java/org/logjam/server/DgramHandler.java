@@ -28,7 +28,6 @@ import io.netty.channel.socket.DatagramPacket;
 
 public class DgramHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 
-  // private static final Logger LOG = LoggerFactory.getLogger(DgramHandler.class);
   private final LogHandler logger;
 
   public DgramHandler(LinkedBlockingDeque<LogEntry> dest) {

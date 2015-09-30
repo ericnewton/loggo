@@ -21,6 +21,9 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LogEntry {
   public String host;
   public String app;
@@ -28,8 +31,10 @@ public class LogEntry {
   public String message;
 
   public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss,SSS";
+  private static final Logger LOG = LoggerFactory.getLogger(LogEntry.class);
 
   public static LogEntry parseEntry(String msg, SimpleDateFormat dateFormat) throws ParseException {
+    LOG.info("Decoding " + msg);
     LogEntry result = new LogEntry();
     String[] parts = msg.trim().split(" ", 5);
     if (parts.length != 5) {

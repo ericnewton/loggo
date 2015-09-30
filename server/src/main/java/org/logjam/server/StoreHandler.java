@@ -27,11 +27,12 @@ import org.slf4j.LoggerFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-public class StoreHandler extends SimpleChannelInboundHandler<String> {
 
+public class StoreHandler extends SimpleChannelInboundHandler<String> {
   private static final Logger LOG = LoggerFactory.getLogger(StoreHandler.class);
-  private LinkedBlockingDeque<LogEntry> dest;
-  private SimpleDateFormat parser = new SimpleDateFormat(LogEntry.DATE_FORMAT);
+
+  private final LinkedBlockingDeque<LogEntry> dest;
+  private final SimpleDateFormat parser = new SimpleDateFormat(LogEntry.DATE_FORMAT);
 
   public StoreHandler(LinkedBlockingDeque<LogEntry> dest) {
     this.dest = dest;
@@ -39,9 +40,7 @@ public class StoreHandler extends SimpleChannelInboundHandler<String> {
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, String request) throws Exception {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Recived input line {}", request);
-    }
+    LOG.debug("Received input line {}", request);
     try {
       dest.add(LogEntry.parseEntry(request, parser));
     } catch (ParseException ex) {

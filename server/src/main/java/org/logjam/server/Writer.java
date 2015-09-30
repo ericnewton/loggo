@@ -17,6 +17,7 @@
 package org.logjam.server;
 
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -36,37 +37,39 @@ import org.apache.accumulo.core.client.MutationsRejectedException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.conf.AccumuloConfiguration;
 import org.apache.accumulo.core.data.Mutation;
+import org.apache.commons.configuration.Configuration;
 import org.logjam.client.LogEntry;
+import org.logjam.schema.Defaults;
 import org.logjam.schema.Schema;
-import org.logjam.server.options.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Read LogEntries from a queue, and put them in an accumulo table.
+ */
 public class Writer {
 
   private static final Logger LOG = LoggerFactory.getLogger(Writer.class);
   private static final LogEntry TERMINATE = new LogEntry();
-  private static final SimpleDateFormat dateFormat = new SimpleDateFormat(" " + LogEntry.DATE_FORMAT);
-  private static final BatchWriterConfig BWCONF = new BatchWriterConfig();
 
+  private final SimpleDateFormat dateFormat = new SimpleDateFormat(LogEntry.DATE_FORMAT);
   private final ExecutorService threadPool;
   private final AtomicBoolean stop = new AtomicBoolean(false);
   private final Connector connector;
-  private final Options options;
   private final LinkedBlockingDeque<LogEntry> source;
+  private final Configuration conf;
 
-  static {
-    BWCONF.setMaxLatency(5, TimeUnit.SECONDS);
-  }
-
-  public Writer(LinkedBlockingDeque<LogEntry> source, ClientConfiguration clientConf, Options options) {
+  public Writer(LinkedBlockingDeque<LogEntry> source, ClientConfiguration clientConf, Configuration conf) {
     this.source = source;
-    this.options = options;
+    this.conf = conf;
     this.threadPool = Executors.newFixedThreadPool(1);
     Instance instance = getInstance(clientConf);
+    String user = conf.getString("user", Defaults.USER);
+    String passwd = conf.getString("password", Defaults.PASSWORD);
     try {
-      this.connector = instance.getConnector(options.user, new PasswordToken(options.password.value));
+      this.connector = instance.getConnector(user, new PasswordToken(passwd.getBytes(UTF_8)));
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -94,22 +97,42 @@ public class Writer {
   }
 
   public void start() {
+    final String table = conf.getString("table", Defaults.TABLE);
+    LOG.info("starting writer");
     threadPool.submit(new Callable<Integer>() {
       @Override
       public Integer call() throws Exception {
         while (!stop.get()) {
           try {
-            BatchWriter bw = connector.createBatchWriter(options.table, BWCONF);
+            BatchWriterConfig bwConfig = new BatchWriterConfig();
+            String latency = conf.getString("maxLatency");
+            if (latency != null) {
+              bwConfig.setMaxLatency(AccumuloConfiguration.getTimeInMillis(latency), TimeUnit.MILLISECONDS);
+            }
+            String maxMemory = conf.getString("maxMemory");
+            if (maxMemory != null) {
+              bwConfig.setMaxMemory(AccumuloConfiguration.getMemoryInBytes(maxMemory));
+            }
+            String maxThreads = conf.getString("maxWriteThreads");
+            if (maxThreads != null) {
+              bwConfig.setMaxWriteThreads(Integer.parseInt(maxThreads));
+            }
+            String timeout = conf.getString("timeout");
+            if (timeout != null) {
+              bwConfig.setTimeout(AccumuloConfiguration.getTimeInMillis(timeout), TimeUnit.MILLISECONDS);
+            }
+            BatchWriter bw = connector.createBatchWriter(table, bwConfig);
             while (!stop.get()) {
               LogEntry entry = source.take();
               if (entry == TERMINATE) {
                 bw.close();
                 return 0;
               }
+              LOG.info(entry.message);
               bw.addMutation(logEntryToMutation(entry, dateFormat));
             }
           } catch (TableNotFoundException ex) {
-            LOG.warn("table " + options.table + " does not exist");
+            LOG.warn("table " + table + " does not exist");
             sleepUninterruptibly(1, TimeUnit.SECONDS);
           } catch (MutationsRejectedException e) {
             LOG.warn("failed to store log entry: {}", e.toString());

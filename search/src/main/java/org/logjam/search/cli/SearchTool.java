@@ -55,4 +55,9 @@ public class SearchTool implements KeywordExecutable {
     Search search = new Search(conn, opts, System.out);
     search.query();
   }
+
+  public static void main(String args[]) throws Exception {
+    SearchTool tool = new SearchTool();
+    tool.execute(args);
+  }
 }
