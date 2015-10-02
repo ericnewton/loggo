@@ -43,7 +43,9 @@ import org.apache.accumulo.core.client.TableExistsException;
 import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
+import org.apache.accumulo.core.conf.Property;
 import org.apache.accumulo.core.iterators.user.AgeOffFilter;
+import org.apache.accumulo.server.master.balancer.RegexGroupBalancer;
 import org.apache.accumulo.start.spi.KeywordExecutable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
@@ -252,6 +254,11 @@ public class Server implements KeywordExecutable {
       // Put DEBUG messages into their own locality group
       Map<String,Set<Text>> groups = Collections.singletonMap("debug", Collections.singleton(new Text("DEBUG")));
       connector.tableOperations().setLocalityGroups(table, groups);
+      // Spread the shards out over different hosts
+      connector.tableOperations().setProperty(table, RegexGroupBalancer.REGEX_PROPERTY, "(\\d\\d\\d\\d).*");
+      connector.tableOperations().setProperty(table, RegexGroupBalancer.DEFAUT_GROUP_PROPERTY, "0000");
+      connector.tableOperations().setProperty(table, RegexGroupBalancer.WAIT_TIME_PROPERTY, "50ms");
+      connector.tableOperations().setProperty(table, Property.TABLE_LOAD_BALANCER.getKey(), RegexGroupBalancer.class.getName());
     } catch (TableExistsException ex) {
       // perhaps a peer server created it
     } catch (TableNotFoundException ex) {

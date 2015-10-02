@@ -29,21 +29,40 @@ import org.apache.accumulo.core.iterators.Filter;
 import org.apache.accumulo.core.iterators.IteratorEnvironment;
 import org.apache.accumulo.core.iterators.SortedKeyValueIterator;
 
-import com.google.common.primitives.Bytes;
-
 public class GrepValueFilter extends Filter {
 
   private byte term[];
+  private int right[] = new int[256];
 
   @Override
   public boolean accept(Key k, Value v) {
-    return Bytes.indexOf(v.get(), term) >= 0;
+    // return Bytes.indexOf(v.get(), term) >= 0;
+    return search(v.get()) >= 0;
+  }
+
+  private final int search(final byte[] value) {
+    final int M = term.length;
+    final int N = value.length;
+    int skip;
+    for (int i = 0; i <= N - M; i+= skip) {
+      skip = 0;
+      for (int j = M - 1; j >= 0; j--) {
+        if (term[j] != value[i+j]) {
+          skip = Math.max(1,  j - right[value[i+j]]);
+        }
+      }
+      if (skip == 0) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   @Override
   public SortedKeyValueIterator<Key,Value> deepCopy(IteratorEnvironment env) {
     GrepValueFilter copy = (GrepValueFilter) super.deepCopy(env);
     copy.term = Arrays.copyOf(term, term.length);
+    copy.right = Arrays.copyOf(right, right.length);
     return copy;
   }
 
@@ -51,6 +70,12 @@ public class GrepValueFilter extends Filter {
   public void init(SortedKeyValueIterator<Key,Value> source, Map<String,String> options, IteratorEnvironment env) throws IOException {
     super.init(source, options, env);
     term = options.get("term").getBytes(UTF_8);
+    for (int i = 0; i < right.length; i++) {
+      right[i] = -1;
+    }
+    for (int i = 0; i < term.length; i++) {
+      right[term[i] & 0xff] = i;
+    }
   }
 
   public static void setTerm(IteratorSetting cfg, String term) {
