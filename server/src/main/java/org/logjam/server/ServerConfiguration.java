@@ -18,6 +18,7 @@ package org.logjam.server;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.tree.DefaultExpressionEngine;
 import org.apache.commons.configuration.tree.ExpressionEngine;
 
@@ -45,6 +46,13 @@ public class ServerConfiguration extends HierarchicalINIConfiguration {
   @Override
   public ExpressionEngine getExpressionEngine() {
     return engine;
+  }
+
+  @Override
+  public SubnodeConfiguration getSection(String name) {
+    SubnodeConfiguration result = super.getSection(name);
+    result.setDelimiterParsingDisabled(true);
+    return result;
   }
 
 }

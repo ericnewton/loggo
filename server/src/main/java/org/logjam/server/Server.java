@@ -19,16 +19,20 @@ package org.logjam.server;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
+import org.I0Itec.zkclient.ZkClient;
 import org.apache.accumulo.core.client.AccumuloException;
 import org.apache.accumulo.core.client.AccumuloSecurityException;
 import org.apache.accumulo.core.client.ClientConfiguration;
@@ -40,13 +44,17 @@ import org.apache.accumulo.core.client.TableNotFoundException;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.core.iterators.user.AgeOffFilter;
-import org.apache.accumulo.server.zookeeper.ZooReaderWriter;
 import org.apache.accumulo.start.spi.KeywordExecutable;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.hadoop.io.Text;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.logjam.client.LogEntry;
 import org.logjam.schema.Defaults;
 import org.logjam.schema.Schema;
@@ -67,6 +75,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import kafka.admin.AdminUtils;
 
 @AutoService(KeywordExecutable.class)
 public class Server implements KeywordExecutable {
@@ -117,7 +126,6 @@ public class Server implements KeywordExecutable {
   private final EventLoopGroup dgramGroup = new NioEventLoopGroup();
   private Writer writer;
   private Channel channel;
-  private ZooReaderWriter zookeeper;
   private KafkaConsumer kafkaConsumer;
 
   int run() {
@@ -138,6 +146,7 @@ public class Server implements KeywordExecutable {
     Configuration serverSection = config.getSection("server");
     Configuration accumuloSection = config.getSection("accumulo");
     Configuration batchSection = config.getSection("batchwriter");
+    Configuration kafkaSection = config.getSection("kafka");
     ClientConfiguration clientConfig = new ClientConfiguration(accumuloSection);
 
     // connect to accumulo, check on the table
@@ -149,6 +158,7 @@ public class Server implements KeywordExecutable {
     if (!connector.tableOperations().exists(table)) {
       createTable(connector, table);
     }
+    createTopic(kafkaConsumerSection.getString("zookeeper.connect"), kafkaSection);
 
     LinkedBlockingDeque<LogEntry> queue = new LinkedBlockingDeque<LogEntry>(config.getInt("queue.size", Defaults.QUEUE_SIZE));
     this.writer = new Writer(queue, clientConfig, batchSection);
@@ -188,7 +198,7 @@ public class Server implements KeywordExecutable {
       serverSection.setProperty("udp.port", udpPort);
 
       registerInZookeeper(serverSection);
-    } catch (KeeperException | InterruptedException ex) {
+    } catch (IOException | KeeperException | InterruptedException ex) {
       throw new RuntimeException(ex);
     }
     String zookeeperConnect = kafkaConsumerSection.getString("zookeeper.connect");
@@ -196,6 +206,29 @@ public class Server implements KeywordExecutable {
       kafkaConsumer = new KafkaConsumer();
       kafkaConsumer.initialize(config, queue);
       kafkaConsumer.start();
+    }
+  }
+
+  protected void createTopic(String zookeepers, Configuration kafkaSection) {
+    ZkClient zk = new ZkClient(zookeepers);
+    try {
+      String topic = kafkaSection.getString("topic", Defaults.TOPIC);
+      if (AdminUtils.topicExists(zk, topic)) {
+        return;
+      }
+      int partitions = kafkaSection.getInt("topic.partitions", Defaults.PARTITIONS);
+      int replication = kafkaSection.getInt("topic.replication", Defaults.REPLICATIONS);
+      Properties properties = new Properties();
+      String propString = kafkaSection.getString("topic.properties", "");
+      for (String keyValue : propString.split(",")) {
+        String parts[] = keyValue.split("=");
+        if (parts.length == 2) {
+          properties.setProperty(parts[0], parts[1]);
+        }
+      }
+      AdminUtils.createTopic(zk, topic, partitions, replication, properties);
+    } finally {
+      zk.close();
     }
   }
 
@@ -225,21 +258,37 @@ public class Server implements KeywordExecutable {
     }
   }
 
-  private void registerInZookeeper(Configuration config) throws KeeperException, InterruptedException {
+  private void registerInZookeeper(Configuration config) throws IOException, KeeperException, InterruptedException {
     String zookeepers = config.getString("zookeepers");
     if (zookeepers != null) {
-      zookeeper = new ZooReaderWriter(zookeepers, 30 * 1000, "");
-      if (!zookeeper.exists("/udp")) {
-        zookeeper.mkdirs("/udp");
+      final CountDownLatch latch = new CountDownLatch(1);
+      ZooKeeper zookeeper = new ZooKeeper(zookeepers, 30 * 1000, new Watcher() {
+          @Override
+          public void process(WatchedEvent event) {
+            latch.countDown();
+          }
+        });
+      try {
+        latch.await();
+        try {
+          zookeeper.create("/udp", new byte[]{}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException ex) {
+          // expected
+        }
+        String host = config.getString("host");
+        int port = config.getInt("udp.port");
+        zookeeper.create("/udp/logger-", (host + ":" + port).getBytes(UTF_8), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+
+        try {
+          zookeeper.create("/tcp", new byte[] {}, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        } catch (KeeperException.NodeExistsException ex) {
+          // expected
+        }
+        port = config.getInt("tcp.port");
+        zookeeper.create("/tcp/logger-", (host + ":" + port).getBytes(UTF_8), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+      } finally {
+        zookeeper.close();
       }
-      String host = config.getString("host");
-      int port = config.getInt("udp.port");
-      zookeeper.putEphemeralSequential("/udp/logger-", (host + ":" + port).getBytes(UTF_8));
-      if (!zookeeper.exists("/tcp")) {
-        zookeeper.mkdirs("/tcp");
-      }
-      port = config.getInt("tcp.port");
-      zookeeper.putEphemeralSequential("/tcp/logger-", (host + ":" + port).getBytes(UTF_8));
     }
   }
 

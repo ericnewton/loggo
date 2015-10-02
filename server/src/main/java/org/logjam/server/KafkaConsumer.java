@@ -111,7 +111,9 @@ public class KafkaConsumer {
               MessageAndMetadata<String,LogEntry> entry = iterator.next();
               LogEntry message = entry.message();
               if (message != null) {
-                queue.offer(message);
+                if (!queue.offer(message)) {
+                  LOG.warn("Dropping {}" + message);
+                }
               }
               if (stop.get()) {
                 return 0;

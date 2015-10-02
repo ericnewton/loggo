@@ -5,10 +5,13 @@ group.id = logger
 
 [kafka]
 #topic = logs
+#topic.partitions = 1
+#topic.replication = 1
+#topic.properties=
 
 [server]
 # where to register tcp/udp port numbers in zookeeper
-# zookeepers = 
+# zookeepers =
 # queue.size = 1000
 # tcp.port = 9991
 # udp.port = 9991

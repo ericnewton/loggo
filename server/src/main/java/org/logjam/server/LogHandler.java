@@ -41,7 +41,7 @@ public class LogHandler extends SimpleChannelInboundHandler<String> {
   protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
     try {
       if (!queue.offer(LogEntry.parseEntry(msg, dateFormat))) {
-        LOG.trace("Dropping msg {}", msg);
+        LOG.warn("Dropping msg {}", msg);
       }
     } catch (ParseException er) {
       LOG.info("Error parsing message {}", msg);

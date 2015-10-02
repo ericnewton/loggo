@@ -19,10 +19,8 @@ package org.logjam.client;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Iterator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LogEntry {
   public String host;
@@ -31,10 +29,9 @@ public class LogEntry {
   public String message;
 
   public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss,SSS";
-  private static final Logger LOG = LoggerFactory.getLogger(LogEntry.class);
+  // private static final Logger LOG = LoggerFactory.getLogger(LogEntry.class);
 
   public static LogEntry parseEntry(String msg, SimpleDateFormat dateFormat) throws ParseException {
-    LOG.info("Decoding " + msg);
     LogEntry result = new LogEntry();
     String[] parts = msg.trim().split(" ", 5);
     if (parts.length != 5) {
@@ -46,5 +43,10 @@ public class LogEntry {
     result.timestamp = dateFormat.parse(i.next() + " " + i.next()).getTime();
     result.message = i.next();
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s %s %s %s", host, app, new SimpleDateFormat(DATE_FORMAT).format(new Date(timestamp)), message);
   }
 }

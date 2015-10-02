@@ -24,4 +24,6 @@ public class Defaults {
   public static final int QUEUE_SIZE = 1000;
   public static final String HOST = "0.0.0.0";
   public static final String TOPIC = "logs";
+  public static final int PARTITIONS = 1;
+  public static final int REPLICATIONS = 1;
 }
