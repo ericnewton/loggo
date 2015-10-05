@@ -1,4 +1,4 @@
-package org.logjam.kafka;
+package org.logjam.bigjar;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

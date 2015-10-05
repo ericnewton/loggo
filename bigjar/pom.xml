@@ -8,8 +8,8 @@
 		<artifactId>logjam</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logjam-kafka</artifactId>
-	<name>logjam-kafka</name>
+	<artifactId>logjam-bigjar</artifactId>
+	<name>logjam-bigjar</name>
 	<url>http://maven.apache.org</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -66,7 +66,7 @@
 						</excludes>
 					</artifactSet>
 					<shadedArtifactAttached>true</shadedArtifactAttached>
-					<shadedClassifierName>kafka</shadedClassifierName>
+					<shadedClassifierName>bigjar</shadedClassifierName>
 					<createDependencyReducedPom>false</createDependencyReducedPom>
 					<filters>
 						<filter>

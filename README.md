@@ -71,7 +71,7 @@ For example:
 	# find all the logs from r00{1,2,3}n01 from zookeeper starting this month
 	$ ./bin/accumulo logjam-search -h r001n01 -h r002n01 -h r002n01 -a zookeeper -s $(date +%Y-%m-01)
 
-Simply configure your java services like hadoop, drop in the logjam-client-kafka.jar, and your services will forward their logs using a redundant, scalable service.
+Simply configure your java services like hadoop, drop in the logjam-bigjar-0.0.1-SNAPSHOT-bigjar.jar, and your services will forward their logs using a redundant, scalable service.
 
 One service that cannot use Kafka to deliver messages is zookeeper.  Kafka uses zookeeper, so it is not available when zookeeper starts.
 To break this circular dependency, just use the simple org.logjam.client.UDPAppender, which is just the log4j UDPAppender ported back to 1.2:
@@ -85,7 +85,7 @@ To break this circular dependency, just use the simple org.logjam.client.UDPAppe
 	log4j.appender.UDP.layout=org.apache.log4j.EnhancedPatternLayout
 	log4j.appender.UDP.layout.ConversionPattern=%properties{hostname} %properties{application} %d{ISO8601} [%c] %p: %m
 
-Again, you'll need to have the logjam-kafka-0.0.1-SNAPSHOT-kafka.jar file in $ZOOKEEPER_HOME/lib.
+Again, you'll need to have the logjam-bigjar-0.0.1-SNAPSHOT-bigjar.jar file in $ZOOKEEPER_HOME/lib.
 
 Other tools can be used to forward logs for systems that do not use log4j.  For example, the following logstash configuration file
 can be used to forward log messages from syslog to kafka:

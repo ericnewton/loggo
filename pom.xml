@@ -32,7 +32,7 @@
     <module>server</module>
     <module>search</module>
     <module>schema</module>
-    <module>kafka</module>
+    <module>bigjar</module>
   </modules>
   <properties>
     <accumulo.release.version>1.7.0</accumulo.release.version>
