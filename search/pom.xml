@@ -8,7 +8,6 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <artifactId>loggo-search</artifactId>
-  <version>1.0-SNAPSHOT</version>
   <name>loggo-search</name>
   <properties>
     <jersey.version>2.21</jersey.version>
