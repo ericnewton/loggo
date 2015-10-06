@@ -21,12 +21,12 @@
     <artifactId>apache</artifactId>
     <version>17</version>
   </parent>
-  <groupId>org.logjam</groupId>
-  <artifactId>logjam</artifactId>
+  <groupId>org.loggo</groupId>
+  <artifactId>loggo</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>logjam</name>
-  <url>https://github.com/ericnewton/logjam</url>
+  <name>loggo</name>
+  <url>https://github.com/ericnewton/loggo</url>
   <modules>
     <module>client</module>
     <module>server</module>

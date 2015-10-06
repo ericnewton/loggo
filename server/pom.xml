@@ -18,12 +18,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>logjam</artifactId>
-    <groupId>org.logjam</groupId>
+    <artifactId>loggo</artifactId>
+    <groupId>org.loggo</groupId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>logjam-server</artifactId>
-  <name>logjam-server</name>
+  <artifactId>loggo-server</artifactId>
+  <name>loggo-server</name>
   <description></description>
   <dependencies>
     <dependency>
@@ -68,13 +68,13 @@
       <version>${kafka.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.logjam</groupId>
-      <artifactId>logjam-client</artifactId>
+      <groupId>org.loggo</groupId>
+      <artifactId>loggo-client</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.logjam</groupId>
-      <artifactId>logjam-schema</artifactId>
+      <groupId>org.loggo</groupId>
+      <artifactId>loggo-schema</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

@@ -4,12 +4,12 @@
 	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
-		<groupId>org.logjam</groupId>
-		<artifactId>logjam</artifactId>
+		<groupId>org.loggo</groupId>
+		<artifactId>loggo</artifactId>
 		<version>0.0.1-SNAPSHOT</version>
 	</parent>
-	<artifactId>logjam-bigjar</artifactId>
-	<name>logjam-bigjar</name>
+	<artifactId>loggo-bigjar</artifactId>
+	<name>loggo-bigjar</name>
 	<url>http://maven.apache.org</url>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,8 +26,8 @@
 			<version>${kafka.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.logjam</groupId>
-			<artifactId>logjam-client</artifactId>
+			<groupId>org.loggo</groupId>
+			<artifactId>loggo-client</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
@@ -84,7 +84,7 @@
 							implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 							<manifestEntries>
 								<Sealed>false</Sealed>
-								<Main-Class>org.logjam.kafka.Main</Main-Class>
+								<Main-Class>org.loggo.kafka.Main</Main-Class>
 							</manifestEntries>
 						</transformer>
 					</transformers>

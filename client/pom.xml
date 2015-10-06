@@ -18,12 +18,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>logjam</artifactId>
-    <groupId>org.logjam</groupId>
+    <artifactId>loggo</artifactId>
+    <groupId>org.loggo</groupId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>logjam-client</artifactId>
-  <name>logjam-client</name>
+  <artifactId>loggo-client</artifactId>
+  <name>loggo-client</name>
   <dependencies>
     <dependency>
       <groupId>log4j</groupId>
@@ -40,8 +40,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-    	<groupId>org.logjam</groupId>
-    	<artifactId>logjam-schema</artifactId>
+    	<groupId>org.loggo</groupId>
+    	<artifactId>loggo-schema</artifactId>
     	<version>${project.version}</version>
     </dependency>
   </dependencies>

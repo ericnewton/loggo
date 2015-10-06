@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-logjam: a scalable live log collection service and tools.
+loggo: a scalable live log collection service and tools.
 
 Why some new log collection service?
 
@@ -54,38 +54,38 @@ to <pre>$HADOOP_CONF_DIR/hadoop-env.sh</pre> and configuring a log4j appender in
 
 Kafka will deliver log messages to a service which will store the messages in Accumulo, though other back-ends would not be difficult to write. The writer is started with a simple configuration file to find the kafka servers and the accumulo instance. Multiple writers can be used at scale.
 
-    $ ./bin/accumulo logjam-server --config conf/logjam.ini
+    $ ./bin/accumulo loggo-server --config conf/loggo.ini
 
 There is a simple command line search utility which uses the power of Accumulo iterators to distribute the data extraction for analysis.
 
 For example:
 
 	# count the log messages from r002n05 from the application "datanode"
-	$ ./bin/accumulo logjam-search -h r002n05 -a datanode --count
+	$ ./bin/accumulo loggo-search -h r002n05 -a datanode --count
 	11230405
 
 	# find all the logs from r101n07 from today
-	$ ./bin/accumulo logjam-search -h r101n07 -s today
+	$ ./bin/accumulo loggo-search -h r101n07 -s today
 	2015-09-01 01:02:03,123	echoApp localhost		This is a log message.
 	
 	# find all the logs from r00{1,2,3}n01 from zookeeper starting this month
-	$ ./bin/accumulo logjam-search -h r001n01 -h r002n01 -h r002n01 -a zookeeper -s $(date +%Y-%m-01)
+	$ ./bin/accumulo loggo-search -h r001n01 -h r002n01 -h r002n01 -a zookeeper -s $(date +%Y-%m-01)
 
-Simply configure your java services like hadoop, drop in the logjam-bigjar-0.0.1-SNAPSHOT-bigjar.jar, and your services will forward their logs using a redundant, scalable service.
+Simply configure your java services like hadoop, drop in the loggo-bigjar-0.0.1-SNAPSHOT-bigjar.jar, and your services will forward their logs using a redundant, scalable service.
 
 One service that cannot use Kafka to deliver messages is zookeeper.  Kafka uses zookeeper, so it is not available when zookeeper starts.
-To break this circular dependency, just use the simple org.logjam.client.UDPAppender, which is just the log4j UDPAppender ported back to 1.2:
+To break this circular dependency, just use the simple org.loggo.client.UDPAppender, which is just the log4j UDPAppender ported back to 1.2:
 
 	log4j.rootLogger=${zookeeper.root.logger},UDP
 
-	log4j.appender.UDP=org.logjam.client.UDPAppender
-	log4j.appender.UDP.remoteHost=logjam-server-host
+	log4j.appender.UDP=org.loggo.client.UDPAppender
+	log4j.appender.UDP.remoteHost=loggo-server-host
 	log4j.appender.UDP.port=9991
 	log4j.appender.UDP.application=zookeeper
 	log4j.appender.UDP.layout=org.apache.log4j.EnhancedPatternLayout
 	log4j.appender.UDP.layout.ConversionPattern=%properties{hostname} %properties{application} %d{ISO8601} [%c] %p: %m
 
-Again, you'll need to have the logjam-bigjar-0.0.1-SNAPSHOT-bigjar.jar file in $ZOOKEEPER_HOME/lib.
+Again, you'll need to have the loggo-bigjar-0.0.1-SNAPSHOT-bigjar.jar file in $ZOOKEEPER_HOME/lib.
 
 Other tools can be used to forward logs for systems that do not use log4j.  For example, the following logstash configuration file
 can be used to forward log messages from syslog to kafka:
