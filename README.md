@@ -56,6 +56,8 @@ Kafka will deliver log messages to a service which will store the messages in Ac
 
     $ ./bin/accumulo loggo-server --config conf/loggo.ini
 
+For detailed instructions for configuring typical applications, see INSTALL.md.
+
 There is a simple command line search utility which uses the power of Accumulo iterators to distribute the data extraction for analysis.
 
 For example:
@@ -71,47 +73,3 @@ For example:
 	# find all the logs from r00{1,2,3}n01 from zookeeper starting this month
 	$ ./bin/accumulo loggo-search -h r001n01 -h r002n01 -h r002n01 -a zookeeper -s $(date +%Y-%m-01)
 
-Simply configure your java services like hadoop, drop in the loggo-bigjar-0.0.1-SNAPSHOT-bigjar.jar, and your services will forward their logs using a redundant, scalable service.
-
-One service that cannot use Kafka to deliver messages is zookeeper.  Kafka uses zookeeper, so it is not available when zookeeper starts.
-To break this circular dependency, just use the simple org.loggo.client.UDPAppender, which is just the log4j UDPAppender ported back to 1.2:
-
-	log4j.rootLogger=${zookeeper.root.logger},UDP
-
-	log4j.appender.UDP=org.loggo.client.UDPAppender
-	log4j.appender.UDP.remoteHost=loggo-server-host
-	log4j.appender.UDP.port=9991
-	log4j.appender.UDP.application=zookeeper
-	log4j.appender.UDP.layout=org.apache.log4j.EnhancedPatternLayout
-	log4j.appender.UDP.layout.ConversionPattern=%properties{hostname} %properties{application} %d{ISO8601} [%c] %p: %m
-
-Again, you'll need to have the loggo-bigjar-0.0.1-SNAPSHOT-bigjar.jar file in $ZOOKEEPER_HOME/lib.
-
-Other tools can be used to forward logs for systems that do not use log4j.  For example, the following logstash configuration file
-can be used to forward log messages from syslog to kafka:
-
-	input { 
-	  file { path => '/var/log/messages' }
-	}
-	filter {
-	  grok {
-	    match => ["message", "%{SYSLOGBASE} %{GREEDYDATA:syslog_message}" ]
-	  }
-	  date { 
-	    match => ["timestamp", "MMM dd HH:mm:ss", "MMM  d HH:mm:ss"]
-	  }
-	  ruby {
-	     code => "
-	        event['time'] = event.sprintf('%{+YYYY-MM-dd HH:mm:ss,SSS}')
-	     "
-	    }
-	}
-	output {
-	  kafka { 
-	    topic_id => 'logs' 
-	    broker_list => 'kafkahost:9092,kafkahost:9092'
-	    codec => line { 
-	      format => "%{host} %{program} %{time} %{syslog_message}" 
-	    }
-	  }
-	}

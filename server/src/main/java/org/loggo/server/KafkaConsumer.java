@@ -112,7 +112,7 @@ public class KafkaConsumer {
               LogEntry message = entry.message();
               if (message != null) {
                 if (!queue.offer(message)) {
-                  LOG.warn("Dropping {}" + message);
+                  LOG.warn("Dropping {}", message);
                 }
               }
               if (stop.get()) {
