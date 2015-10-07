@@ -19,6 +19,7 @@ package org.loggo.schema;
 public interface Schema {
   public static final int SHARDS = 251;
   public static final String SHARD_FORMAT = "%03d";
+  public static final String ROW_FORMAT = SHARD_FORMAT + " %s";
   public static final int SHARD_LENGTH = 4;
   public static final String APP_HOST_SEPARATOR = "\0";
   public static final String DEFAULT_FAMILY = "UNKNOWN";

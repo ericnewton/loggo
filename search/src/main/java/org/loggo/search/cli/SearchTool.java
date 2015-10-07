@@ -24,7 +24,7 @@ import org.apache.accumulo.core.client.Instance;
 import org.apache.accumulo.core.client.ZooKeeperInstance;
 import org.apache.accumulo.core.client.security.tokens.PasswordToken;
 import org.apache.accumulo.start.spi.KeywordExecutable;
-import org.loggo.search.cli.options.Options;
+import org.loggo.search.cli.options.SearchOptions;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
@@ -40,7 +40,7 @@ public class SearchTool implements KeywordExecutable {
 
   @Override
   public void execute(String[] args) throws Exception {
-    Options opts = new Options();
+    SearchOptions opts = new SearchOptions();
     JCommander parser = new JCommander(opts);
     try {
       parser.setProgramName(SearchTool.class.getSimpleName());

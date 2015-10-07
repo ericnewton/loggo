@@ -21,7 +21,7 @@ import java.util.List;
 
 import com.beust.jcommander.Parameter;
 
-public class Options {
+public class SearchOptions extends LoginOptions {
   @Parameter(names = {"--start", "-s"}, converter = TimeConverter.class,
       description = "Start time to search. Format can be one of \"YYYY-mm-dd HH:mm:ss,SSS\", \"YYYY-mm-dd HH:mm:ss\", \"YYYY-mm-dd\" or \"today\"")
   public Long start = null;
@@ -49,13 +49,4 @@ public class Options {
 
   @Parameter(description = "search terms")
   public List<String> terms = new ArrayList<>();
-
-  @Parameter(names = {"--user", "-u"})
-  public String user = "root";
-
-  @Parameter(names = {"--password", "-p"})
-  public String password = "secret";
-
-  @Parameter(names = {"--table"})
-  public String table = "logs";
 }

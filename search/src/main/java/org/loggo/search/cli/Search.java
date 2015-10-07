@@ -38,7 +38,7 @@ import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.loggo.client.LogEntry;
 import org.loggo.schema.Schema;
-import org.loggo.search.cli.options.Options;
+import org.loggo.search.cli.options.SearchOptions;
 import org.loggo.search.iterators.CountingIterator;
 import org.loggo.search.iterators.GrepValueFilter;
 import org.loggo.search.iterators.HostAndApplicationFilter;
@@ -52,10 +52,10 @@ public class Search {
   private static String ROW_FORMAT = Schema.SHARD_FORMAT + " %s";
 
   private final Connector conn;
-  private final Options opts;
+  private final SearchOptions opts;
   private final PrintStream printer;
 
-  public Search(Connector conn, Options opts, PrintStream printer) {
+  public Search(Connector conn, SearchOptions opts, PrintStream printer) {
     this.conn = conn;
     this.opts = opts;
     this.printer = printer;
