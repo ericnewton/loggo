@@ -24,11 +24,17 @@
 		<version>17</version>
 	</parent>
 	<groupId>org.loggo</groupId>
-	<artifactId>loggo</artifactId>
+	<artifactId>loggo-project</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>loggo</name>
 	<url>https://github.com/ericnewton/loggo</url>
+	<licenses>
+	  <license>
+	    <name>Apache License, Version 2.0</name>
+	    <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+	  </license>
+	</licenses>
 	<modules>
 		<module>client</module>
 		<module>server</module>

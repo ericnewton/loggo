@@ -27,7 +27,7 @@ Why some new log collection service?
 	* for 10 services / node
 	* for 10K nodes
 
-The simplest logger can be very simple.  They just need to connect to a socket and send a properly formatted message. The format is a line containing hostname<space>application<space>date-time<space>message. For example:
+The simplest logger can be very simple.  They just need to connect to a socket and send a properly formatted message. The format is a line containing *hostname* \<space\> *application* \<space\> *date-time* \<space\>message. For example:
 
    $ NOW=$(date '+%y-%m-%d %H:%M:%S,000')
    $ echo $(hostname) echoApp ${NOW} 'This is a log message.\n' | nc loggerhost 9991

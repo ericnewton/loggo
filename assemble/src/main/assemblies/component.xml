@@ -43,5 +43,10 @@
         <include>INSTALL.md</include>
       </includes>
     </fileSet>
+    <fileSet>
+      <directory>conf</directory>
+      <directoryMode>0755</directoryMode>
+      <fileMode>0644</fileMode>
+    </fileSet>
   </fileSets>
 </component>
