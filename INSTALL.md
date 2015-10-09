@@ -20,66 +20,87 @@ How to configure various hadoop components to write log data to loggo
 
 Kafka:
 ------
-The "broker.id" of each kafka server needs to be different, but due to [KAFKA-2152][1], at least one server needs to have broker.id=0. Remember to expand the zookeeper list on larger systems.
+
+The "broker.id" of each kafka server needs to be different, but due to
+[KAFKA-2152][1], at least one server needs to have
+broker.id=0. Remember to expand the zookeeper list on larger systems.
 
 Kafka needs zookeeper to run.
 
 Zookeeper:
 ----------
 
-Create a symbolic link to the loggo bigjar, which will provide the UDP Appender. If you are running log4j2, you could use the Appender in that release. Since zookeeper 3.4.6 still uses log4j 1.2, these configurations use the one in loggo-bigjar:
+Create a symbolic link to the loggo bigjar, which will provide the UDP
+Appender. If you are running log4j2, you could use the Appender in
+that release. Since zookeeper 3.4.6 still uses log4j 1.2, these
+configurations use the one in loggo-bigjar:
 
 	ln -s /some/location/loggo-bigjar.jar lib
 
 Change the log4j.properties file:
 
-	log4j.rootLogger=WARN, CONSOLE ,UDP
-	log4j.logger=INFO
+	log4j.rootLogger=${zookeeper.root.logger},UDP
 
 	log4j.appender.UDP=org.loggo.client.UDPAppender
+	# replace this with one of the hosts running the kafka consumer
 	log4j.appender.UDP.remoteHost=loggo-server-host
 	log4j.appender.UDP.port=9991
 	log4j.appender.UDP.application=zookeeper
 	log4j.appender.UDP.layout=org.apache.log4j.EnhancedPatternLayout
 	log4j.appender.UDP.layout.ConversionPattern=%properties{hostname} %properties{application} %d{ISO8601} [%c] %p: %m
 
-Once zookeeper is running, go ahead and start kafka.
+Once zookeeper is running, go ahead and start kafka. 
 
+Kafka:
+------
+
+After kafka is configured with the appropriate zookeeper config,
+create the topic for logs.  By default this topic is "logs" and can be
+created like this:
+
+	$ ./bin/kafka-topics --zookeeper host1:2181,host2:2181,host3:2181/path --topic logs --partitions 1 --replication 1
+
+This only needs to be done once, and as noted lated, it will be done
+for you if you forget. However, it may prevent logs from being sent by
+other services before the loggo server is started.
 
 Hadoop:
 -------
 
-Add the following lines to hadoop-env.sh:
+Add the following lines to hadoop-env.sh, which will allow the log4j
+configuration to know the current host and application:
 
-	export HADDOP_OPTS="${HADOOP_OPTS} -Dhadoop.hostname=$(hostname) -Dhadoop.application=$1 "
-	export HADOOP_ROOT_LOGGER=WARN,RFA
+	export HADOOP_OPTS="${HADOOP_OPTS} -Dhadoop.hostname=$(hostname) -Dhadoop.application=$1 "
 
 Edit the log4j.properties file. Change the rootLogger line from:
+
 	log4j.rootLogger=${hadoop.root.logger}, EventCounter
 
 to:
 	log4j.rootLogger=${hadoop.root.logger}, EventCounter, KAFKA
-	log4j.logger=INFO
 
 Add the KAFKA appender:
 
 	log4j.appender.KAFKA=kafka.producer.KafkaLog4jAppender
 	log4j.appender.KAFKA.topic=logs
+	log4j.appender.KAFKA.threshold=DEBUG
 	log4j.appender.KAFKA.brokerList=kafka-host:9092
 	log4j.appender.KAFKA.layout=org.apache.log4j.EnhancedPatternLayout
 	log4j.appender.KAFKA.layout.ConversionPattern=${hadoop.hostname} ${hadoop.application} %d{ISO8601} [%c] %p: %m
 
-Create a symbolic link to the loggo bigjar, which will pull in kafka, scala and other necessary libraries to 
-support the appender:
+Create a symbolic link to the loggo bigjar, which will pull in kafka,
+scala and other necessary libraries to support the appender:
 
 	ln -s /some/location/loggo-bigjar.jar share/hadoop/common/lib
 
-Note that kafka needs to be running on "kafka-host" to being accepting the log messages.
+Note that kafka needs to be running on "kafka-host" to begin accepting
+the log messages.
 
 Accumulo:
 ---------
 
-Use accumulo to run the kafka consumer.  This requires a few more symlinks:
+Use accumulo to run the kafka consumer.  This requires a few more
+symlinks:
 
 	# link in all the loggo jars
 	ln -s /some/location/loggo*.jar lib
@@ -91,6 +112,7 @@ Edit the conf/generic_logger.xml file.  Add the kafka appender:
 
 	<!-- Send all logging data kafka -->
 	<appender name="KAFKA" class="kafka.producer.KafkaLog4jAppender">
+	  <!-- ====== Edit this ======-->
 	  <param name="brokerList"   value="kafka-host:9092"/>
 	  <param name="topic"        value="logs"/>
 	  <param name="Threshold"      value="DEBUG"/>
@@ -99,9 +121,14 @@ Edit the conf/generic_logger.xml file.  Add the kafka appender:
 	  </layout>
 	</appender>
 
-Remember to use your kafka host(s). Turn off lower-level logging in the kafka appender so it doesn't deadlock:
+Remember to use your kafka host(s). Turn off lower-level logging in
+the kafka appender so it doesn't deadlock:
 
 	<logger name="org.apache.kafka">
+	  <level value="ERROR"/>
+	</logger>
+	
+	<logger name="kafka">
 	  <level value="ERROR"/>
 	</logger>
 
@@ -116,21 +143,25 @@ Add the kafka appender:
 	  <appender-ref ref="KAFKA" />
 	</root>
 
-It is not recommended that you use the KAFKA appender for the log4j.properties file for accumulo.  For the few applications that will use this file (like the accumulo shell), use the UDP appender instead. See the zookeeper instructions.
+It is not recommended that you use the KAFKA appender for the
+log4j.properties file for accumulo.  For the few applications that
+will use this file (like the accumulo shell), use the UDP appender
+instead. See the zookeeper instructions.
 
-Add the following to the accumulo-env.sh file, to pick up the new jars before the path extension code runs:
+Add the following to the accumulo-env.sh file, to pick up the new jars
+before the path extension code runs:
 
-ACCUMULO_GENERAL_OPTS="${ACCUMULO_GENERAL_OPTS} -Dhostname=$(hostname) "
-CLASSPATH="${CLASSPATH}:$(echo ${ACCUMULO_HOME}/lib/loggo-bigjar.jar)"
-CLASSPATH="${CLASSPATH}:$(echo ${ZOOKEEPER_HOME}/zookeeper*.jar)"
-CLASSPATH="${CLASSPATH}:$(echo ${ACCUMULO_HOME}/lib/netty*.jar)"
+	CLASSPATH="${CLASSPATH}:$(echo ${ACCUMULO_HOME}/lib/loggo-bigjar.jar)"
+	CLASSPATH="${CLASSPATH}:$(echo ${ZOOKEEPER_HOME}/zookeeper*.jar)"
+	CLASSPATH="${CLASSPATH}:$(echo ${ACCUMULO_HOME}/lib/netty*.jar)"
 
 
 System logs
 -----------
 
-Logstash can be used to parse system logs and forward them to loggo.  The following logstash configuration will
-read messages from /var/log/messages:
+Logstash can be used to parse system logs and forward them to loggo.
+The following logstash configuration will read messages from
+/var/log/messages:
 
 	input { 
 	  file { path => '/var/log/messages' }
@@ -143,10 +174,8 @@ read messages from /var/log/messages:
 	    match => [ "timestamp", "MMM dd HH:mm:ss", "MMM  d HH:mm:ss"]
 	  }
 	  ruby {
-	     code => "
-	        event['time'] = event.sprintf('%{+YYYY-MM-dd HH:mm:ss,SSS}')
-	     "
-	    }
+	     code => "event['time'] = event.sprintf('%{+YYYY-MM-dd HH:mm:ss,SSS}')"
+	  }
 	}
 	output { 
 	  kafka { 
@@ -161,21 +190,28 @@ read messages from /var/log/messages:
 Loggo Server:
 -------------
 
-The kafka consumer that injects log entries into Accumulo can be run from the accumulo directory.  Once all the 
-loggo jar files and netty jar file have been linked or copied into the accumulo lib directory, You can run the
-loggo server:
+The kafka consumer that injects log entries into Accumulo can be run
+from the accumulo directory. Link or copy the loggo jar into the
+accumulo lib directory.  You can create a loggo server config file
+from the defaults file, and then run the server:
 
+	$ ln -s /some/path/somewhere/loggo/lib/*.jar lib
+	$ cp /some/path/somewhere/loggo/conf/loggo-server.ini.defaults conf/loggo-server.ini
+	$ $EDITOR conf/loggo-server.ini
 	$ ./bin/accumulo loggo-server --config conf/loggo-server.ini
 
-The loggo conf/loggo-server.ini file can serve as a starting point for creating your own configuration, and the
-options are documented in that file.
+Note that during the first run, if the configured table does not
+exist, it will be created and configured with several initial
+split-points and a 31-day age off.  If you want to run the
+loggo-server with a different accumulo login, create the user and
+grant them Table.CREATE priviledges.  Also during the first run, the
+kafka topic will be created, if it does not exist. Services that are
+started before the topic is created will not log to kafka until they
+restarted.
 
-Note that during the first run, if the configured table does not exist, it will be created and configured with
-several initial split-points.  If you want to run the loggo-server with a different accumulo login, create the
-user and grant them Table.CREATE priviledges.  Also during the first run, the kafka topic will be created, if it
-does not exist. Services that are started before the topic is created will not log to kafka until they restarted.
-
-The loggo server can be run on multiple machines, as can the kafka message service nodes.  This provides redundancy
-and scaling of log collection.  Just be certain to add all your servers to the brokerList settings.
+The loggo server can be run on multiple machines, as can the kafka
+message service nodes.  This provides redundancy and scaling of log
+collection.  Just be certain to add all your servers to the brokerList
+settings.
 
 [1]: https://issues.apache.org/jira/browse/KAFKA-2152
