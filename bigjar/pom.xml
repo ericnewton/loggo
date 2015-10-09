@@ -28,7 +28,6 @@
 		<dependency>
 			<groupId>org.loggo</groupId>
 			<artifactId>loggo-client</artifactId>
-			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

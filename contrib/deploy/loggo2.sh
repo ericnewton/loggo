@@ -13,5 +13,5 @@ pssh -e /tmp/errs -h leaders '(cd install ; tar -xvf ../tarballs/kafka*)' || err
 pssh -e /tmp/errs -h leaders ln -sf ~/install/loggo*/lib/loggo-bigjar*.jar ~/install/zoo*/lib || error cannot make links for zookeeper
 pssh -e /tmp/errs -h workers -H leader3 ln -sf ~/install/loggo*/lib/*.jar ~/install/accumulo*/lib || error cannot make links for accumulo 
 pssh -e /tmp/errs -h workers -h leaders ln -sf ~/install/loggo*/lib/loggo-bigjar*.jar ~/install/hadoop*/share/hadoop/common/lib || error cannot make links for hadoop
-ssh leader3 sudo yum install -y pssh
+ssh -t leader3 sudo yum install -y pssh
 ( sleep 2 ; echo 'create /kafka ""' ) | ./install/zookeeper*/bin/zkCli.sh 
