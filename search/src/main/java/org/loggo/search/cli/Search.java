@@ -24,7 +24,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.accumulo.core.client.BatchScanner;
 import org.apache.accumulo.core.client.Connector;
@@ -42,6 +46,9 @@ import org.loggo.search.cli.options.SearchOptions;
 import org.loggo.search.iterators.CountingIterator;
 import org.loggo.search.iterators.GrepValueFilter;
 import org.loggo.search.iterators.HostAndApplicationFilter;
+import org.loggo.search.iterators.StatsIterator;
+
+import com.google.common.base.Joiner;
 
 public class Search {
   public static final String SHORT_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -124,6 +131,65 @@ public class Search {
           total += Long.parseLong(entry.getValue().toString());
         }
         printer.println(total);
+        return;
+      }
+
+      // Get stats, not logs
+      if (opts.duration != null) {
+        final long duration = opts.duration;
+        SimpleDateFormat fmt = new SimpleDateFormat(LogEntry.DATE_FORMAT);
+        // Stats iterator pulls out counts by CF
+        IteratorSetting is = new IteratorSetting(priority++, StatsIterator.class);
+        StatsIterator.duration(is, opts.duration, TimeUnit.MILLISECONDS);
+        bs.addScanIterator(is);
+        // Group counts under the right "bucket" of time
+        SortedMap<Long,Map<String,Long>> stats = new TreeMap<>();
+        for (Entry<Key,Value> entry : bs) {
+          Key key = entry.getKey();
+          long ts = StatsIterator.getTs(key, fmt);
+          // convert to start time for this bucket
+          ts -= ts % duration;
+          Map<String,Long> byCF = stats.get(ts);
+          if (byCF == null) {
+            stats.put(ts, byCF = new TreeMap<>());
+          }
+          // Add values, by name given a string: "NAME:VALUE,NAME2:VALUE2"
+          String value = entry.getValue().toString();
+          if (!value.isEmpty()) {
+            String nameCounts[] = value.split(",");
+            for (String nameCount : nameCounts) {
+              String parts[] = nameCount.split(":");
+              Long current = byCF.get(parts[0]);
+              if (current == null) {
+                current = Long.decode(parts[1]);
+              } else {
+                current = Long.decode(parts[1]) + current.longValue();
+              }
+              byCF.put(parts[0], current);
+            }
+          }
+        }
+        if (stats.isEmpty()) return;
+        // Use the range of the data, or a user specified range, if provided
+        long start = stats.firstKey();
+        long end = stats.lastKey();
+        if (opts.start != null) {
+          start = opts.start - (opts.start % duration);
+        }
+        if (opts.end != null) {
+          end = opts.end - (opts.end % duration);
+        }
+        // Print a line for each bucket, even if there's no data
+        for (long time = start; time <= end; time += duration) {
+          Map<String,Long> byCF = stats.get(time);
+          List<String> byCFList = new ArrayList<>();
+          if (byCF != null) {
+            for (Entry<String,Long> entry : byCF.entrySet()) {
+              byCFList.add(String.format("%s: %d", entry.getKey(), entry.getValue()));
+            }
+          }
+          printer.println(String.format("%s\t%s", fmt.format(new Date(time)), Joiner.on(", ").join(byCFList)));
+        }
         return;
       }
 

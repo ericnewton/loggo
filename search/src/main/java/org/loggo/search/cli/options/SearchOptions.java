@@ -49,4 +49,8 @@ public class SearchOptions extends LoginOptions {
 
   @Parameter(description = "search terms")
   public List<String> terms = new ArrayList<>();
+
+  @Parameter(names = {"--stats"}, description = "for the given interval, print statistics about the number of log messages by severity",
+      converter = Duration.class)
+  public Long duration;
 }
